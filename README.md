@@ -8,9 +8,7 @@ Supports both iCloud-backed storage (synced across Macs) and local-only storage.
 
 Projects are organized by **org** (organization/context) and **name**:
 
-- `personal` — your own projects
-- `acme` — work for a client
-- `mycompany` — internal work for your employer
+For example, orgs might include your personal projects, a client's name, or your employer's name.
 
 Code is optional. Some projects are code-based, others are purely documents. A project can have multiple repositories.
 

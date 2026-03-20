@@ -123,6 +123,15 @@ hive relink
 # Check workspace health
 hive doctor
 
+# Archive a project (clean git repos are deleted, other code is preserved)
+hive archive <project>
+
+# Restore an archived project
+hive restore <project>
+
+# Permanently delete a project
+hive delete <project> --force
+
 # Show storage configuration
 hive storage
 

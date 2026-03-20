@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"syscall"
-
 	"github.com/sakakibara/hive/internal/config"
 	"github.com/sakakibara/hive/internal/fsutil"
 	"github.com/sakakibara/hive/internal/meta"
@@ -167,7 +165,7 @@ func Adopt(cfg *config.Config, org, name, sourcePath string) (*Project, error) {
 		return nil, fmt.Errorf("repo destination: %s", msg)
 	}
 
-	if err := moveDir(sourcePath, dest); err != nil {
+	if err := fsutil.MoveDir(sourcePath, dest); err != nil {
 		return nil, fmt.Errorf("move to code root: %w", err)
 	}
 
@@ -223,24 +221,6 @@ func setupProjectRoot(p *Project) error {
 	return nil
 }
 
-// moveDir moves src to dst, falling back to system mv for cross-device moves.
-func moveDir(src, dst string) error {
-	err := os.Rename(src, dst)
-	if err == nil {
-		return nil
-	}
-	if linkErr, ok := err.(*os.LinkError); ok {
-		if linkErr.Err == syscall.EXDEV {
-			cmd := exec.Command("mv", src, dst)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				return fmt.Errorf("%s: %w", strings.TrimSpace(string(out)), err)
-			}
-			return nil
-		}
-	}
-	return err
-}
-
 // detectRemoteURL returns the git remote URL for a directory, or empty string.
 func detectRemoteURL(dir string) string {
 	cmd := exec.Command("git", "-C", dir, "remote", "get-url", "origin")
@@ -254,13 +234,23 @@ func detectRemoteURL(dir string) string {
 // Scan finds all projects under the projects root by looking for .hive.json files.
 func Scan(cfg *config.Config) ([]*Project, error) {
 	resolved := cfg.Resolved()
-	projectsDir, err := filepath.EvalSymlinks(resolved.Paths.Projects)
+	return scanDir(resolved.Paths.Projects, resolved.Paths.Code)
+}
+
+// scanDir walks a directory tree looking for .hive.json files and returns the projects found.
+func scanDir(root, codeRoot string) ([]*Project, error) {
+	resolvedRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
-		return nil, fmt.Errorf("resolve projects path: %w", err)
+		return nil, fmt.Errorf("resolve path %s: %w", root, err)
 	}
+
+	if info, err := os.Stat(resolvedRoot); err != nil || !info.IsDir() {
+		return nil, nil
+	}
+
 	var projects []*Project
 
-	err = filepath.Walk(projectsDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(resolvedRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -285,7 +275,7 @@ func Scan(cfg *config.Config) ([]*Project, error) {
 		}
 
 		if m.HasCode() {
-			p.CodeRoot = filepath.Join(resolved.Paths.Code, m.CodeRel)
+			p.CodeRoot = filepath.Join(codeRoot, m.CodeRel)
 		}
 
 		projects = append(projects, p)
@@ -323,8 +313,13 @@ func FindByQuery(cfg *config.Config, query string) ([]*Project, error) {
 	if err != nil {
 		return nil, err
 	}
+	return filterByQuery(all, query), nil
+}
+
+// filterByQuery filters a list of projects by smartcase subpath matching.
+func filterByQuery(projects []*Project, query string) []*Project {
 	var matches []*Project
-	for _, p := range all {
+	for _, p := range projects {
 		for _, sub := range p.Subpaths() {
 			if isSmartcaseMatch(query, sub) {
 				matches = append(matches, p)
@@ -332,7 +327,7 @@ func FindByQuery(cfg *config.Config, query string) ([]*Project, error) {
 			}
 		}
 	}
-	return matches, nil
+	return matches
 }
 
 func gitClone(url, dest string) error {

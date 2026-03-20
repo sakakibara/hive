@@ -200,7 +200,7 @@ func checkProjects(r *Report, cfg *config.Config) {
 			}
 		}
 
-		// Check repos.
+		// Check tracked repos.
 		for repoName, repoURL := range m.Repos {
 			repoPath := filepath.Join(expectedCodeTarget, repoName)
 			if fsutil.PathExists(repoPath) {
@@ -209,6 +209,25 @@ func checkProjects(r *Report, cfg *config.Config) {
 				r.err("%s: repo %s missing (url: %s)", m.Name, repoName, repoURL)
 			} else {
 				r.err("%s: repo %s missing", m.Name, repoName)
+			}
+		}
+
+		// Detect repos on disk that are not tracked in metadata.
+		if fsutil.IsDir(expectedCodeTarget) {
+			entries, dirErr := os.ReadDir(expectedCodeTarget)
+			if dirErr == nil {
+				for _, entry := range entries {
+					if !entry.IsDir() {
+						continue
+					}
+					name := entry.Name()
+					if strings.HasPrefix(name, ".") {
+						continue
+					}
+					if _, tracked := m.Repos[name]; !tracked {
+						r.warn("%s: repo %s exists on disk but is not tracked in metadata", m.Name, name)
+					}
+				}
 			}
 		}
 

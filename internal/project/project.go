@@ -131,7 +131,8 @@ func CloneRepo(cfg *config.Config, p *Project, repoURL string) (string, error) {
 	return repoName, nil
 }
 
-// Adopt moves an existing repository into nest's managed structure.
+// Adopt moves an existing repository into hive's managed structure.
+// If the project already exists, the repo is added to it.
 func Adopt(cfg *config.Config, org, name, sourcePath string) (*Project, error) {
 	sourcePath, err := filepath.Abs(sourcePath)
 	if err != nil {
@@ -146,13 +147,27 @@ func Adopt(cfg *config.Config, org, name, sourcePath string) (*Project, error) {
 		return nil, fmt.Errorf("source path %s is not a directory", sourcePath)
 	}
 
+	// Check if the project already exists.
 	p := ResolveNewWithCode(cfg, org, name)
+	existing := fsutil.IsDir(p.ProjectRoot)
 
-	if msg := fsutil.PathConflict(p.ProjectRoot); msg != "" {
-		return nil, fmt.Errorf("project root: %s", msg)
+	if existing {
+		// Load existing project metadata.
+		metaPath := filepath.Join(p.ProjectRoot, meta.FileName)
+		m, err := meta.Read(metaPath)
+		if err != nil {
+			return nil, fmt.Errorf("read existing project: %w", err)
+		}
+		p.Meta = m
+		p.Repos = m.Repos
+		if m.HasCode() {
+			p.CodeRel = m.CodeRel
+			resolved := cfg.Resolved()
+			p.CodeRoot = filepath.Join(resolved.Paths.Code, m.CodeRel)
+		}
 	}
 
-	// Create code container directory.
+	// Ensure code directory exists.
 	if err := fsutil.EnsureDir(p.CodeRoot); err != nil {
 		return nil, fmt.Errorf("create code root: %w", err)
 	}
@@ -171,18 +186,32 @@ func Adopt(cfg *config.Config, org, name, sourcePath string) (*Project, error) {
 
 	// Detect repo URL from the moved directory.
 	repoURL := detectRemoteURL(dest)
-	p.Repos = map[string]string{repoName: repoURL}
-
-	if err := setupProjectRoot(p); err != nil {
-		return nil, err
+	if p.Repos == nil {
+		p.Repos = make(map[string]string)
 	}
+	p.Repos[repoName] = repoURL
 
-	// Update metadata with repo info.
-	if repoURL != "" {
+	if existing {
+		// Update existing metadata.
 		metaPath := filepath.Join(p.ProjectRoot, meta.FileName)
-		if m, err := meta.Read(metaPath); err == nil {
-			m.AddRepo(repoName, repoURL)
-			_ = meta.Write(metaPath, m)
+		m, err := meta.Read(metaPath)
+		if err != nil {
+			return nil, fmt.Errorf("read metadata: %w", err)
+		}
+		m.CodeRel = p.CodeRel
+		m.AddRepo(repoName, repoURL)
+		if err := meta.Write(metaPath, m); err != nil {
+			return nil, fmt.Errorf("write metadata: %w", err)
+		}
+
+		// Ensure code symlink exists.
+		codeLinkPath := filepath.Join(p.ProjectRoot, "code")
+		if err := fsutil.EnsureSymlink(p.CodeRoot, codeLinkPath); err != nil {
+			return nil, fmt.Errorf("create code symlink: %w", err)
+		}
+	} else {
+		if err := setupProjectRoot(p); err != nil {
+			return nil, err
 		}
 	}
 

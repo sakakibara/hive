@@ -33,22 +33,22 @@ In iCloud mode, Projects/Life/Work/Archive are symlinked to iCloud Drive. Code i
 With code (multi-repo):
 
 ```
-~/Projects/acme/order-form/
-  code -> ~/Code/acme/order-form/
+~/Projects/<org>/<project>/
+  code -> ~/Code/<org>/<project>/
   docs/
   assets/
   links/
   .hive.json
 
-~/Code/acme/order-form/
-  order-form-frontend/   (git repo)
-  order-form-api/        (git repo)
+~/Code/<org>/<project>/
+  <project>-frontend/   (git repo)
+  <project>-api/        (git repo)
 ```
 
 Without code:
 
 ```
-~/Projects/mycompany/hr-strategy/
+~/Projects/<org>/<project>/
   docs/
   assets/
   links/
@@ -97,24 +97,24 @@ Storage mode is auto-detected during `hive init`. Once written, the mode is neve
 hive init
 
 # Create a project (no code yet)
-hive new mycompany hr-strategy
+hive new <org> <project>
 
 # Clone a repo into a project
-hive clone hr-strategy https://github.com/mycompany/hr-tool.git
+hive clone <project> <git-url>
 
 # Create a project and clone in one flow
-hive new personal myapp
-hive clone myapp https://github.com/me/myapp.git
+hive new <org> <project>
+hive clone <project> <git-url>
 
 # Adopt an existing repo into a new project
-hive adopt acme order-form ~/src/order-form
+hive adopt <org> <project> <path-to-repo>
 
 # List projects
 hive list
 
 # Open a project (for shell use)
-cd "$(hive open order-form)"
-cd "$(hive open acme/order-form)"
+cd "$(hive open <project>)"
+cd "$(hive open <org>/<project>)"
 
 # Restore code dirs on a new Mac
 hive bootstrap

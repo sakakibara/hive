@@ -33,6 +33,9 @@ func init() {
 	rootCmd.AddCommand(archiveCmd)
 	rootCmd.AddCommand(restoreCmd)
 	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(renameCmd)
+	rootCmd.AddCommand(renameOrgCmd)
+	rootCmd.AddCommand(syncCmd)
 }
 
 func Execute() error {

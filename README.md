@@ -132,6 +132,15 @@ hive restore <project>
 # Permanently delete a project
 hive delete <project> --force
 
+# Rename a project
+hive rename <project> <new-name>
+
+# Rename an organization
+hive rename-org <old-org> <new-org>
+
+# Sync metadata with actual state on disk
+hive sync
+
 # Show storage configuration
 hive storage
 

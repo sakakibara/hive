@@ -3,9 +3,11 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sakakibara/hive/internal/config"
+	"github.com/sakakibara/hive/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -51,6 +53,44 @@ func loadConfig() (*config.Config, error) {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 	return cfg, nil
+}
+
+func completeProjectQuery(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveDefault
+	}
+	cfg, err := loadConfig()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	projects, err := project.Scan(cfg)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	var completions []string
+	for _, p := range projects {
+		completions = append(completions, filepath.Join(p.Org, p.Name))
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+func completeArchivedProjectQuery(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveDefault
+	}
+	cfg, err := loadConfig()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	projects, err := project.ScanArchive(cfg)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	var completions []string
+	for _, p := range projects {
+		completions = append(completions, filepath.Join(p.Org, p.Name))
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }
 
 func listOrgs() []string {

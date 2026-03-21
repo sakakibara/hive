@@ -90,6 +90,8 @@ Storage mode is auto-detected during `hive init`. Once written, the mode is neve
 
 ## Usage
 
+Many commands accept a `<query>` to identify a project. You can use just the project name (e.g., `website`) or `<org>/<project>` (e.g., `acme/website`) to disambiguate when multiple orgs have the same project name.
+
 ```sh
 # Initialize workspace (detects storage mode, writes config, creates dirs)
 hive init

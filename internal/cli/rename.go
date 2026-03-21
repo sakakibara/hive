@@ -8,11 +8,12 @@ import (
 )
 
 var renameCmd = &cobra.Command{
-	Use:   "rename <query> <new-name>",
-	Short: "Rename a project",
-	Long:  "Rename a project, moving its directories and updating metadata.",
-	Args:  cobra.ExactArgs(2),
-	RunE:  runRename,
+	Use:               "rename <query> <new-name>",
+	Short:             "Rename a project",
+	Long:              "Rename a project, moving its directories and updating metadata.",
+	Args:              cobra.ExactArgs(2),
+	ValidArgsFunction: completeProjectQuery,
+	RunE:              runRename,
 }
 
 func runRename(cmd *cobra.Command, args []string) error {

@@ -9,11 +9,12 @@ import (
 )
 
 var archiveCmd = &cobra.Command{
-	Use:   "archive <query>",
-	Short: "Archive a project",
-	Long:  "Move a project to the archive.\nGit repos that are clean and synced with their remote are deleted.\nAll other code is preserved in the archive.",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runArchive,
+	Use:               "archive <query>",
+	Short:             "Archive a project",
+	Long:              "Move a project to the archive.\nGit repos that are clean and synced with their remote are deleted.\nAll other code is preserved in the archive.",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeProjectQuery,
+	RunE:              runArchive,
 }
 
 func runArchive(cmd *cobra.Command, args []string) error {
@@ -50,11 +51,12 @@ func runArchive(cmd *cobra.Command, args []string) error {
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore <query>",
-	Short: "Restore an archived project",
-	Long:  "Move a project from the archive back to the active workspace.",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runRestore,
+	Use:               "restore <query>",
+	Short:             "Restore an archived project",
+	Long:              "Move a project from the archive back to the active workspace.",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeArchivedProjectQuery,
+	RunE:              runRestore,
 }
 
 func runRestore(cmd *cobra.Command, args []string) error {
@@ -84,11 +86,12 @@ func runRestore(cmd *cobra.Command, args []string) error {
 var deleteForce bool
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete <query>",
-	Short: "Permanently delete a project",
-	Long:  "Remove a project and its code directory entirely.\nRequires --force flag.",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runDelete,
+	Use:               "delete <query>",
+	Short:             "Permanently delete a project",
+	Long:              "Remove a project and its code directory entirely.\nRequires --force flag.",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeProjectQuery,
+	RunE:              runDelete,
 }
 
 func init() {

@@ -9,11 +9,12 @@ import (
 )
 
 var cloneCmd = &cobra.Command{
-	Use:   "clone <query> <repo_url>",
-	Short: "Clone a repository into a project",
-	Long:  "Clone a git repository into an existing project's code directory.\nThe repo name is derived from the URL.",
-	Args:  cobra.ExactArgs(2),
-	RunE:  runClone,
+	Use:               "clone <query> <repo_url>",
+	Short:             "Clone a repository into a project",
+	Long:              "Clone a git repository into an existing project's code directory.\nThe repo name is derived from the URL.",
+	Args:              cobra.ExactArgs(2),
+	ValidArgsFunction: completeProjectQuery,
+	RunE:              runClone,
 }
 
 func runClone(cmd *cobra.Command, args []string) error {

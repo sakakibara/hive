@@ -8,11 +8,12 @@ import (
 )
 
 var openCmd = &cobra.Command{
-	Use:   "open <query>",
-	Short: "Print the project path for shell use",
-	Long:  "Print the path to the matching project.\nUsage: cd \"$(hive open myproject)\"",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runOpen,
+	Use:               "open <query>",
+	Short:             "Print the project path for shell use",
+	Long:              "Print the path to the matching project.\nUsage: cd \"$(hive open myproject)\"",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeProjectQuery,
+	RunE:              runOpen,
 }
 
 func runOpen(cmd *cobra.Command, args []string) error {

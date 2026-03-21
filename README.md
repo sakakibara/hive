@@ -112,9 +112,11 @@ hive adopt <org> <project> <path-to-repo>
 # List projects
 hive list
 
-# Open a project (for shell use)
-cd "$(hive open <project>)"
-cd "$(hive open <org>/<project>)"
+# Print a project path
+hive path <project>
+
+# Interactively select a project with fzf
+hive open
 
 # Restore code dirs on a new Mac
 hive bootstrap
@@ -148,6 +150,28 @@ hive storage
 
 # Upgrade hive
 hive upgrade
+```
+
+## Shell integration
+
+Add to your shell config for `h` (cd to project) and `hi` (interactive fzf selection):
+
+```fish
+# fish (~/.config/fish/config.fish)
+hive init-shell fish | source
+```
+
+```bash
+# bash (~/.bashrc) or zsh (~/.zshrc)
+eval "$(hive init-shell bash)"
+```
+
+Then use:
+
+```sh
+h website          # cd to project "website"
+h acme/website     # cd to project "acme/website"
+hi                 # interactive fzf project selector + cd
 ```
 
 ## Releasing

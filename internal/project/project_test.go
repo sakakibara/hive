@@ -256,22 +256,40 @@ func TestSubpaths(t *testing.T) {
 	}
 }
 
-func TestSmartcase(t *testing.T) {
+func TestMatchTier(t *testing.T) {
 	tests := []struct {
-		query, target string
-		want          bool
+		query         string
+		subpaths      []string
+		caseSensitive bool
+		want          matchTierLevel
 	}{
-		{"foo", "foo", true},
-		{"foo", "Foo", true},
-		{"foo", "FOO", true},
-		{"Foo", "Foo", true},
-		{"Foo", "foo", false},
-		{"FOO", "foo", false},
+		// Exact matches.
+		{"foo", []string{"foo"}, false, tierExact},
+		{"foo", []string{"Foo"}, false, tierExact},  // case-insensitive
+		{"Foo", []string{"Foo"}, true, tierExact},    // case-sensitive exact
+		{"Foo", []string{"foo"}, true, tierNone},     // case-sensitive mismatch
+
+		// Prefix matches.
+		{"hy", []string{"hypericum"}, false, tierPrefix},
+		{"HY", []string{"hypericum"}, false, tierPrefix},
+		{"Hy", []string{"Hypericum"}, true, tierPrefix},
+		{"Hy", []string{"hypericum"}, true, tierNone},
+
+		// Substring matches.
+		{"per", []string{"hypericum"}, false, tierSubstring},
+		{"form", []string{"order-form"}, false, tierSubstring},
+
+		// No match.
+		{"xyz", []string{"hypericum"}, false, tierNone},
+
+		// Best tier wins across subpaths.
+		{"foo", []string{"acme/foo", "foo"}, false, tierExact},
+		{"hy", []string{"personal/hypericum", "hypericum"}, false, tierPrefix},
 	}
 	for _, tt := range tests {
-		got := isSmartcaseMatch(tt.query, tt.target)
+		got := matchTier(tt.query, tt.subpaths, tt.caseSensitive)
 		if got != tt.want {
-			t.Errorf("isSmartcaseMatch(%q, %q) = %v, want %v", tt.query, tt.target, got, tt.want)
+			t.Errorf("matchTier(%q, %v, %v) = %v, want %v", tt.query, tt.subpaths, tt.caseSensitive, got, tt.want)
 		}
 	}
 }

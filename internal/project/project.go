@@ -328,15 +328,10 @@ func (p *Project) Subpaths() []string {
 	return subs
 }
 
-func isSmartcaseMatch(query, target string) bool {
-	if query == strings.ToLower(query) {
-		return strings.EqualFold(query, target)
-	}
-	return query == target
-}
-
-// FindByQuery returns all projects matching the given query using subpath matching
-// and smartcase filtering.
+// FindByQuery returns all projects matching the given query using subpath matching.
+// Matching is tiered: exact > prefix > substring. Within each tier, smartcase
+// applies (all-lowercase query is case-insensitive, mixed-case is exact).
+// The highest-priority tier with results wins.
 func FindByQuery(cfg *config.Config, query string) ([]*Project, error) {
 	all, err := Scan(cfg)
 	if err != nil {
@@ -345,18 +340,61 @@ func FindByQuery(cfg *config.Config, query string) ([]*Project, error) {
 	return filterByQuery(all, query), nil
 }
 
-// filterByQuery filters a list of projects by smartcase subpath matching.
+// filterByQuery filters a list of projects by tiered smartcase subpath matching.
 func filterByQuery(projects []*Project, query string) []*Project {
-	var matches []*Project
+	caseSensitive := query != strings.ToLower(query)
+
+	var exact, prefix, substring []*Project
 	for _, p := range projects {
-		for _, sub := range p.Subpaths() {
-			if isSmartcaseMatch(query, sub) {
-				matches = append(matches, p)
-				break
-			}
+		best := matchTier(query, p.Subpaths(), caseSensitive)
+		switch best {
+		case tierExact:
+			exact = append(exact, p)
+		case tierPrefix:
+			prefix = append(prefix, p)
+		case tierSubstring:
+			substring = append(substring, p)
 		}
 	}
-	return matches
+
+	if len(exact) > 0 {
+		return exact
+	}
+	if len(prefix) > 0 {
+		return prefix
+	}
+	return substring
+}
+
+type matchTierLevel int
+
+const (
+	tierNone      matchTierLevel = iota
+	tierSubstring
+	tierPrefix
+	tierExact
+)
+
+// matchTier returns the best match tier for any of the candidate subpaths.
+func matchTier(query string, subpaths []string, caseSensitive bool) matchTierLevel {
+	best := tierNone
+	for _, sub := range subpaths {
+		q, s := query, sub
+		if !caseSensitive {
+			q = strings.ToLower(q)
+			s = strings.ToLower(s)
+		}
+
+		if q == s {
+			return tierExact
+		}
+		if strings.HasPrefix(s, q) && best < tierPrefix {
+			best = tierPrefix
+		} else if strings.Contains(s, q) && best < tierSubstring {
+			best = tierSubstring
+		}
+	}
+	return best
 }
 
 func gitClone(url, dest string) error {

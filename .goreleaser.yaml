@@ -1,0 +1,36 @@
+version: 2
+
+project_name: hive
+
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - main: ./cmd/hive/
+    binary: hive
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/sakakibara/hive/internal/cli.version={{ .Version }}
+      - -X github.com/sakakibara/hive/internal/cli.commit={{ .ShortCommit }}
+      - -X github.com/sakakibara/hive/internal/cli.date={{ .Date }}
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  github:
+    owner: sakakibara
+    name: hive
